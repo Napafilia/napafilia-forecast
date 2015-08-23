@@ -19,7 +19,7 @@ G    GGG  E        R R      E               T     O     O  N   N N      W WW W  
 
 <script LANGUAGE="JavaScript" src="Ephemeride.js"></script>
 
-<script src="/js/jquery.min.js"></script>
+<script src="js/jquery.min.js"></script>
 <link rel="stylesheet" href="meteo.css">
 
 
