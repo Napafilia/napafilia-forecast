@@ -1,6 +1,32 @@
 <?php
 /* Proxy-cache for Yahoo Weather queries... */
-$cachetime = 600;   // 10min
+$cachetime = 60;   // 10min
+
+function sendWeather ($cachefile, $callback)
+{
+    // Get weather data from local cache
+    if (file_exists ($cachefile))
+    {
+        $content = file_get_contents ("$cachefile");
+        $content = preg_replace('/^[^\(]+/', "$callback", $content);
+        echo $content;
+        return true;
+    }
+    return false;
+}
+
+// Try to update the 'cachefile'
+function updateCache ($cachefile)
+{
+    // URL to access
+    $query = $_SERVER['QUERY_STRING'];
+    $url = "http://query.yahooapis.com/v1/public/yql?$query";
+
+    system ("echo \"$url\" >> /tmp/debug");
+    system ("wget -T3 -q -O $cachefile.tmp '$url' && mv $cachefile.tmp $cachefile 2>&1 &");
+    return true;
+}
+
 
 // Configure Timeout
 $context = stream_context_create(array(
@@ -12,38 +38,20 @@ $context = stream_context_create(array(
 // Get callback ID
 $callback = isset ($_GET['callback']) ? $_GET['callback'] : 'undefined';
 
-// URL to access
-$query = $_SERVER['QUERY_STRING'];
-$url = "http://query.yahooapis.com/v1/public/yql?$query";
 
-// If cache is up-to-date, do not request online data
 $hash = "/tmp/". md5 ($_SERVER['HTTP_REFERER']);
-if (file_exists ("$hash.weather") &&
-    (time() - filemtime("$hash.weather") < $cachetime))
+
+$displayed = sendWeather ("$hash.weather", $callback);
+$updated = false;
+
+if (!file_exists ("$hash.weather") ||
+    (time() - filemtime("$hash.weather") > $cachetime))
 {
-    // Get weather data from local cache
-    $content = file_get_contents ("$hash.weather");
-    $content = preg_replace('/^[^\(]+/', "$callback", $content);
-}
-else
-{
-    // Load remote URL
-    $content = file_get_contents($url, false, $context);
-    if ($content === FALSE)
-    {
-        if (file_exists ("$hash.weather"))
-        {
-            $content = file_get_contents ("$hash.weather");
-            $content = preg_replace('/^[^\(]+/', "$callback", $content);
-        }
-        else
-            $content = NULL;
-    }
-    else
-    {
-        file_put_contents ("$hash.weather", $content);
-    }
+    $updated = updateCache ("$hash.weather");
 }
 
-echo $content;
+if (! $displayed && $updated)
+{
+    sendWeather("$hash.weather", $callback);
+}
 ?>
