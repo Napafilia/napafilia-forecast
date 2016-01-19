@@ -1,6 +1,6 @@
 <?php
 /* Proxy-cache for Yahoo Weather queries... */
-$cachetime = 600;   // 10min
+$cachetime = 10800;   // 3h
 
 function sendWeather ($cachefile, $callback)
 {
